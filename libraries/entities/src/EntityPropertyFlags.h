@@ -18,6 +18,9 @@ enum EntityPropertyList {
     PROP_PAGED_PROPERTY,
     PROP_CUSTOM_PROPERTIES_INCLUDED,
 
+	PROP_ISSEAT,
+	PROP_CURRENTSEATUSER,
+
     // these properties are supported by the EntityItem base class
     PROP_VISIBLE,
     PROP_POSITION,

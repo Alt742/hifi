@@ -279,6 +279,11 @@ public:
     inline bool isVisible() const { return getVisible(); }
     inline bool isInvisible() const { return !getVisible(); }
 
+	bool getIsSeat() const;
+	void setIsSeat(bool value);
+	QString getCurrentSeatUser() const;
+	void setCurrentSeatUser(const QString& value);
+
     bool getCollisionless() const;
     void setCollisionless(bool value);
 
@@ -522,9 +527,14 @@ protected:
     quint64 _loadedScriptTimestamp { ENTITY_ITEM_DEFAULT_SCRIPT_TIMESTAMP + 1 };
 
     QString _collisionSoundURL;
+    SharedSoundPointer _collisionSound;
     glm::vec3 _registrationPoint;
     float _angularDamping;
     bool _visible;
+
+	bool _isSeat;
+	QString _currentSeatUser;
+
     bool _collisionless;
     uint8_t _collisionMask { ENTITY_COLLISION_MASK_DEFAULT };
     bool _dynamic;

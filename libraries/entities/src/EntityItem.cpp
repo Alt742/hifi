@@ -146,6 +146,9 @@ EntityPropertyFlags EntityItem::getEntityProperties(EncodeBitstreamParams& param
 
     requestedProperties += PROP_LAST_EDITED_BY;
 
+	requestedProperties += PROP_ISSEAT;
+	requestedProperties += PROP_CURRENTSEATUSER;
+
     return requestedProperties;
 }
 
@@ -294,6 +297,9 @@ OctreeElement::AppendState EntityItem::appendEntityData(OctreePacketData* packet
         APPEND_ENTITY_PROPERTY(PROP_PARENT_JOINT_INDEX, getParentJointIndex());
         APPEND_ENTITY_PROPERTY(PROP_QUERY_AA_CUBE, getQueryAACube());
         APPEND_ENTITY_PROPERTY(PROP_LAST_EDITED_BY, getLastEditedBy());
+
+		APPEND_ENTITY_PROPERTY(PROP_ISSEAT, getIsSeat());
+		APPEND_ENTITY_PROPERTY(PROP_CURRENTSEATUSER, getCurrentSeatUser());
 
         appendSubclassData(packetData, params, entityTreeElementExtraEncodeData,
                                 requestedProperties,
@@ -816,6 +822,9 @@ int EntityItem::readEntityDataFromBuffer(const unsigned char* data, int bytesLef
 
     READ_ENTITY_PROPERTY(PROP_REGISTRATION_POINT, glm::vec3, updateRegistrationPoint);
 
+	READ_ENTITY_PROPERTY(PROP_ISSEAT, bool, setIsSeat);
+	READ_ENTITY_PROPERTY(PROP_CURRENTSEATUSER, QString, setCurrentSeatUser);
+
     READ_ENTITY_PROPERTY(PROP_ANGULAR_DAMPING, float, updateAngularDamping);
     READ_ENTITY_PROPERTY(PROP_VISIBLE, bool, setVisible);
     READ_ENTITY_PROPERTY(PROP_COLLISIONLESS, bool, updateCollisionless);
@@ -1217,6 +1226,9 @@ EntityItemProperties EntityItem::getProperties(EntityPropertyFlags desiredProper
 
     properties._type = getType();
 
+	COPY_ENTITY_PROPERTY_TO_PROPERTIES(isSeat, getIsSeat);
+	COPY_ENTITY_PROPERTY_TO_PROPERTIES(currentSeatUser, getCurrentSeatUser);
+
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(simulationOwner, getSimulationOwner);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(position, getLocalPosition);
     COPY_ENTITY_PROPERTY_TO_PROPERTIES(dimensions, getDimensions); // NOTE: radius is obsolete
@@ -1352,6 +1364,9 @@ bool EntityItem::setProperties(const EntityItemProperties& properties) {
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(owningAvatarID, setOwningAvatarID);
 
     SET_ENTITY_PROPERTY_FROM_PROPERTIES(lastEditedBy, setLastEditedBy);
+
+	SET_ENTITY_PROPERTY_FROM_PROPERTIES(isSeat, setIsSeat);
+	SET_ENTITY_PROPERTY_FROM_PROPERTIES(currentSeatUser, setCurrentSeatUser);
 
     AACube saveQueryAACube = _queryAACube;
     checkAndAdjustQueryAACube();
@@ -2701,6 +2716,32 @@ void EntityItem::setVisible(bool value) {
     withWriteLock([&] {
         _visible = value;
     });
+}
+
+bool EntityItem::getIsSeat() const{
+	bool result;
+	withReadLock([&] {
+		result = _isSeat;
+	});
+	return result;
+}
+void EntityItem::setIsSeat(bool value) {
+	withWriteLock([&] {
+		_isSeat = value;
+	});
+}
+QString EntityItem::getCurrentSeatUser() const{
+	QString result;
+	withReadLock([&] {
+		result =  _currentSeatUser;
+	});
+	return result;
+}
+void EntityItem::setCurrentSeatUser(const QString& value) {
+	withWriteLock([&] {
+		_currentSeatUser = value;
+	});
+
 }
 
 bool EntityItem::getCollisionless() const { 

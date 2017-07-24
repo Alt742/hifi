@@ -12,9 +12,9 @@
     Script.include("/~/system/libraries/utils.js");
     if (!String.prototype.startsWith) {
         String.prototype.startsWith = function(searchString, position){
-            position = position || 0;
-            return this.substr(position, searchString.length) === searchString;
-        };
+          position = position || 0;
+          return this.substr(position, searchString.length) === searchString;
+      };
     }
 
     var SETTING_KEY = "com.highfidelity.avatar.isSitting";
@@ -63,42 +63,20 @@
         this.cleanupOverlay();
     }
 
-    this.setSeatUser = function(user) {
+    this.setSeatUser = function (Seat) {
         try {
-            var userData = Entities.getEntityProperties(this.entityID, ["userData"]).userData;
-            userData = JSON.parse(userData);
-
-            if (user !== null) {
-                userData.seat.user = user;
-            } else {
-                delete userData.seat.user;
-            }
-
             Entities.editEntity(this.entityID, {
-                userData: JSON.stringify(userData)
+                IsSeat: Seat
             });
         } catch (e) {
             // Do Nothing
         }
+
     }
     this.getSeatUser = function() {
         try {
-            var properties = Entities.getEntityProperties(this.entityID, ["userData", "position"]);
-            var userData = JSON.parse(properties.userData);
-
-            // If MyAvatar return my uuid
-            if (userData.seat.user === MyAvatar.sessionUUID) {
-                return userData.seat.user;
-            }
-
-
-            // If Avatar appears to be sitting
-            if (userData.seat.user) {
-                var avatar = AvatarList.getAvatar(userData.seat.user);
-                if (avatar &&  (Vec3.distance(avatar.position, properties.position) < RELEASE_DISTANCE)) {
-                    return userData.seat.user;
-                }
-            }
+            var properties = Entities.getEntityProperties(this.entityID, ["IsSeat"]);
+            return properties.IsSeat;
         } catch (e) {
             // Do nothing
         }
@@ -122,18 +100,8 @@
 
     this.rolesToOverride = function() {
         return MyAvatar.getAnimationRoles().filter(function(role) {
-            return !(role.startsWith("right") || role.startsWith("left"));
+            return role === "fly" || role.startsWith("inAir");
         });
-    }
-
-    // Handler for user changing the avatar model while sitting. There's currently an issue with changing avatar models while override role animations are applied,
-    // so to avoid that problem, re-apply the role overrides once the model has finished changing.
-    this.modelURLChangeFinished = function () {
-        print("Sitter's model has FINISHED changing. Reapply anim role overrides.");
-        var roles = this.rolesToOverride();
-        for (i in roles) {
-            MyAvatar.overrideRoleAnimation(roles[i], ANIMATION_URL, ANIMATION_FPS, true, ANIMATION_FIRST_FRAME, ANIMATION_LAST_FRAME);
-        }
     }
 
     this.sitDown = function() {
@@ -150,7 +118,7 @@
 
         var previousValue = Settings.getValue(SETTING_KEY);
         Settings.setValue(SETTING_KEY, this.entityID);
-        this.setSeatUser(MyAvatar.sessionUUID);
+        this.setSeatUser(true);
         if (previousValue === "") {
             MyAvatar.characterControllerEnabled = false;
             MyAvatar.hmdLeanRecenterEnabled = false;
@@ -174,17 +142,15 @@
             return { headType: 0 };
         }, ["headType"]);
         Script.update.connect(this, this.update);
-        MyAvatar.onLoadComplete.connect(this, this.modelURLChangeFinished);
     }
 
     this.standUp = function() {
         print("Standing up (" + this.entityID + ")");
         MyAvatar.removeAnimationStateHandler(this.animStateHandlerID);
         Script.update.disconnect(this, this.update);
-        MyAvatar.onLoadComplete.disconnect(this, this.modelURLChangeFinished);
 
         if (MyAvatar.sessionUUID === this.getSeatUser()) {
-            this.setSeatUser(null);
+            this.setSeatUser(false);
         }
 
         if (Settings.getValue(SETTING_KEY) === this.entityID) {
@@ -343,7 +309,7 @@
         }
         this.cleanupOverlay();
     }
-    
+
     this.clickDownOnEntity = function (id, event) {
         if (isInEditMode()) {
             return;

@@ -99,7 +99,7 @@ PacketVersion versionForPacketType(PacketType packetType) {
             return static_cast<PacketVersion>(AudioVersion::HighDynamicRangeVolume);
 
         default:
-            return 17;
+            return 18;
     }
 }
 

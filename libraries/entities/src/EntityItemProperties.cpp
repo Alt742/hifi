@@ -221,6 +221,9 @@ void EntityItemProperties::setBackgroundModeFromString(const QString& background
 EntityPropertyFlags EntityItemProperties::getChangedProperties() const {
     EntityPropertyFlags changedProperties;
 
+	CHECK_PROPERTY_CHANGE(PROP_ISSEAT, isSeat);
+	CHECK_PROPERTY_CHANGE(PROP_CURRENTSEATUSER, currentSeatUser);
+
     CHECK_PROPERTY_CHANGE(PROP_LAST_EDITED_BY, lastEditedBy);
     CHECK_PROPERTY_CHANGE(PROP_POSITION, position);
     CHECK_PROPERTY_CHANGE(PROP_DIMENSIONS, dimensions);
@@ -377,6 +380,10 @@ QScriptValue EntityItemProperties::copyToScriptValue(QScriptEngine* engine, bool
         COPY_PROPERTY_TO_QSCRIPTVALUE(PROP_DIMENSIONS, naturalDimensions); // gettable, but not settable
         COPY_PROPERTY_TO_QSCRIPTVALUE(PROP_POSITION, naturalPosition);
     }
+
+	COPY_PROPERTY_TO_QSCRIPTVALUE(PROP_ISSEAT, isSeat);
+	COPY_PROPERTY_TO_QSCRIPTVALUE(PROP_CURRENTSEATUSER, currentSeatUser);
+
     COPY_PROPERTY_TO_QSCRIPTVALUE(PROP_ROTATION, rotation);
     COPY_PROPERTY_TO_QSCRIPTVALUE(PROP_VELOCITY, velocity);
     COPY_PROPERTY_TO_QSCRIPTVALUE(PROP_GRAVITY, gravity);
@@ -601,6 +608,8 @@ void EntityItemProperties::copyFromScriptValue(const QScriptValue& object, bool 
     if (typeScriptValue.isValid()) {
         setType(typeScriptValue.toVariant().toString());
     }
+	COPY_PROPERTY_FROM_QSCRIPTVALUE(isSeat, bool, setIsSeat);
+	COPY_PROPERTY_FROM_QSCRIPTVALUE(currentSeatUser, QString, setCurrentSeatUser);
 
     COPY_PROPERTY_FROM_QSCRIPTVALUE(lastEditedBy, QUuid, setLastEditedBy);
     COPY_PROPERTY_FROM_QSCRIPTVALUE(position, glmVec3, setPosition);
@@ -912,6 +921,10 @@ void EntityItemProperties::entityPropertyFlagsFromScriptValue(const QScriptValue
     static std::once_flag initMap;
 
     std::call_once(initMap, [](){
+
+		ADD_PROPERTY_TO_MAP(PROP_ISSEAT, IsSeat, isSeat, bool);
+		ADD_PROPERTY_TO_MAP(PROP_CURRENTSEATUSER, CurrentSeatUser, currentSeatUser, bool);
+
         ADD_PROPERTY_TO_MAP(PROP_VISIBLE, Visible, visible, bool);
         ADD_PROPERTY_TO_MAP(PROP_POSITION, Position, position, glm::vec3);
         ADD_PROPERTY_TO_MAP(PROP_DIMENSIONS, Dimensions, dimensions, glm::vec3);
@@ -1180,6 +1193,9 @@ bool EntityItemProperties::encodeEntityEditPacket(PacketType command, EntityItem
             // These items would go here once supported....
             //      PROP_PAGED_PROPERTY,
             //      PROP_CUSTOM_PROPERTIES_INCLUDED,
+
+			APPEND_ENTITY_PROPERTY(PROP_ISSEAT, properties.getIsSeat());
+			APPEND_ENTITY_PROPERTY(PROP_CURRENTSEATUSER, properties.getCurrentSeatUser());
 
             APPEND_ENTITY_PROPERTY(PROP_SIMULATION_OWNER, properties._simulationOwner.toByteArray());
             APPEND_ENTITY_PROPERTY(PROP_POSITION, properties.getPosition());
@@ -1483,6 +1499,9 @@ bool EntityItemProperties::decodeEntityEditPacket(const unsigned char* data, int
     dataAt += propertyFlags.getEncodedLength();
     processedBytes += propertyFlags.getEncodedLength();
 
+	READ_ENTITY_PROPERTY_TO_PROPERTIES(PROP_VISIBLE, bool, setIsSeat); 
+	READ_ENTITY_PROPERTY_TO_PROPERTIES(PROP_VISIBLE, QString, setCurrentSeatUser);
+
     READ_ENTITY_PROPERTY_TO_PROPERTIES(PROP_SIMULATION_OWNER, QByteArray, setSimulationOwner);
     READ_ENTITY_PROPERTY_TO_PROPERTIES(PROP_POSITION, glm::vec3, setPosition);
     READ_ENTITY_PROPERTY_TO_PROPERTIES(PROP_DIMENSIONS, glm::vec3, setDimensions);  // NOTE: PROP_RADIUS obsolete
@@ -1670,6 +1689,10 @@ bool EntityItemProperties::encodeEraseEntityMessage(const EntityItemID& entityIt
 }
 
 void EntityItemProperties::markAllChanged() {
+
+	_isSeatChanged = true;
+	_currentSeatUserChanged = true;
+
     _lastEditedByChanged = true;
     _simulationOwnerChanged = true;
     _positionChanged = true;
@@ -1851,6 +1874,14 @@ void EntityItemProperties::setSimulationOwner(const QByteArray& data) {
 
 QList<QString> EntityItemProperties::listChangedProperties() {
     QList<QString> out;
+
+	if (isSeatChanged()) {
+		out += "IsSeat";
+	}
+	if (currentSeatUserChanged()) {
+		out += "CurrentSeatUser";
+	}
+
     if (containsPositionChange()) {
         out += "position";
     }
